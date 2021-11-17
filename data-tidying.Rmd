@@ -26,6 +26,14 @@ catch_original <- read_csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/d
 head(catch_original)
 ```
 
+```{r}
+region_defs <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1") %>% 
+    select(code, mgmtArea)
+
+head(region_defs)
+```
+
+
 # Clean and reshape data
 
 Drop notes and all column
@@ -119,3 +127,9 @@ head(var)
 
 # Join to regions dataset
 
+```{r}
+catch_joined <- left_join(catch_long, region_defs, by = c("Region" = "code"))
+
+head(catch_joined)
+```
+...but you can also just rename "code" to "Region" in region_defs
