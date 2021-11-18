@@ -7,6 +7,5 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-[Data Analysis](data-tidying.html)
-
-[Data Vis](data-vis.html)
+- [Data Analysis](data-tidying.html)
+- [Data Vis](data-vis.html)
