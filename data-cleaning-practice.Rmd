@@ -1,0 +1,99 @@
+---
+title: "Data Tidying Practice"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(rvest)
+library(readr)
+library(dplyr)
+library(janitor)
+library(ggplot2)
+
+setwd("/home/sdmiller/training_sdmiller")
+```
+
+```{r}
+webpage <- read_html("https://www.pwrc.usgs.gov/bbl/manual/speclist.cfm")
+
+tbls <- html_nodes(webpage, "table") %>% 
+    html_table(fill = TRUE)
+
+species <- tbls[[1]] %>% 
+    clean_names() %>% 
+    select(alpha_code, common_name) %>% 
+    mutate(alpha_code = tolower(alpha_code))
+
+colnames(species)[which(colnames(species) == 'alpha_code')] <- 'species'
+```
+
+```{r}
+nest_dat <- read_csv("data/Utqiagvik_nest_data.csv", show_col_types = F)
+pred_dat <- read_csv("data/Utqiagvik_predator_surveys.csv", show_col_types = F)
+```
+
+```{r}
+convert_sp_name <- function(dataf, spp){
+  
+  return_vals <- dplyr::left_join(dataf, spp, by = 'species')
+  
+  if(sum(is.na(return_vals$common_name)) > 0){
+    
+    print(paste("You have", sum(is.na(return_vals$common_name)), "NA's in your common name!"))
+    
+  }
+  
+  return(return_vals)
+}
+```
+
+```{r}
+pred_sum <- pred_dat %>%
+  convert_sp_name(species) %>%
+  group_by(year, common_name) %>%
+  summarize(total = sum(count, na.rm = T))
+
+nest_sum <- nest_dat %>%
+  convert_sp_name(species) %>%
+  group_by(year, common_name) %>%
+  summarize(egg_predated = sum(number_eggs_predated, na.rm=T))
+```
+
+```{r}
+pred_plot <- pred_sum %>%
+ggplot(mapping = aes(x = year, y = total, color = common_name)) +
+         geom_line() + 
+         theme_classic()
+
+pred_plot
+```
+
+```{r}
+nest_plot <- nest_sum %>%
+ggplot(mapping = aes(x = year, y = egg_predated, color = common_name)) +
+         geom_line() + 
+         theme_classic()
+
+nest_plot
+```
+
+```{r}
+pred_by_year <- pred_sum %>%
+  group_by(year) %>%
+  summarize(total_predators = sum(total))
+```
+
+```{r}
+egg_pred_by_year <- left_join(nest_sum, pred_by_year, by = "year")
+
+eggpred_plot <- egg_pred_by_year %>%
+  ggplot(mapping = aes(x = total_predators, y = egg_predated)) + 
+  geom_point() + theme_classic()
+
+eggpred_plot
+```
+
